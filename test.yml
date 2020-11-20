@@ -1,6 +1,6 @@
 ---
 - name: update web servers
-  hosts: all
+  hosts: cents
   remote_user: app_admin
   vars:
     env_name: "null"
