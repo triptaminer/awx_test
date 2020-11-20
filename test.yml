@@ -1,0 +1,86 @@
+---
+- name: update web servers
+  hosts: all
+  remote_user: app_admin
+  vars:
+    env_name: "null"
+    usr_name: "null"
+
+  tasks:
+  - name: identification
+    shell: hostname
+
+  - name: install apps
+    become: yes
+    yum:
+      name: git, python3, python-pip
+
+      state: latest
+
+  - name: update pexpect
+    become: yes
+    shell: pip install --upgrade pexpect
+
+  - name: Ensure group "somegroup" exists
+    become: yes
+    group:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - admin
+      - smalldata
+      - wheel
+
+  - name: create admin
+    become: yes
+    user:
+      name: OP_user
+      comment: administration user
+      group: admin
+      groups: smalldata,wheel
+      home: /home/admin
+      append: yes
+
+  - name: make nfs folder
+    become: yes
+    file:
+      path: "{{ item }}"
+      group: smalldata
+      state: directory
+      mode: '0755'
+    loop:
+    - /nfs
+    - /nfs/sd
+
+  - name: make .ssh
+    become: yes
+    file:
+      path: ~OP_user/.ssh
+      state: directory
+      mode: '0700'
+      owner: OP_user
+      group: admin
+
+  - name: copy authorised_keys from root
+    become: yes
+    copy:
+      remote_src: yes
+      src: /home/app-admin/.ssh/authorized_keys
+      dest: ~OP_user/.ssh/
+      owner: OP_user
+      group: admin
+      mode: '0600'
+  
+  - name: copy nice bashrc from local ./files folder
+    become: yes
+    copy:
+      src: ./files/.bashrc
+      dest: ~OP_user/
+      owner: OP_user
+      group: admin
+      mode: '0640'
+
+  - name: create other users
+    tags: users
+    include_tasks: ./tasks/create_users.yml
+    with_sequence:  start=1 end=5 format=%02d

@@ -1,0 +1,125 @@
+---
+
+#creating users and setting up environments
+- set_fact:
+    env_name: "{{ 'env' + item }}"
+    usr_name: "{{ 'env' + item + 'ins' }}"
+  tags:
+  - users
+
+- name: creating users and basic setup
+  become: yes
+#  become_user: "{{ usr_name }}"
+#  become_method: sudo
+  tags: 
+    - creation
+  block:
+
+    - name: create user
+      user:
+        name: "{{ usr_name }}"
+        comment: environment user for {{ env_name }}
+        group: smalldata
+        home: /nfs/sd/{{ env_name }}
+        append: yes
+
+    
+    - name: make .ssh folder
+      file:
+        path: ~{{ usr_name }}/.ssh
+        state: directory
+        owner: "{{ usr_name }}"
+        group: smalldata
+        mode: '0700'
+
+    - name: make git folder
+      file:
+        path: ~{{ usr_name }}/git
+        state: directory
+        owner: "{{ usr_name }}"
+        group: smalldata
+        mode: '0755'
+
+    - name: copy authorised_keys from root
+      copy:
+        remote_src: yes
+        src: /home/app-admin/.ssh/authorized_keys
+        dest: ~{{ usr_name }}/.ssh/
+        owner: "{{ usr_name }}"
+        group: smalldata
+        mode: '0600'
+
+    - name: copy nice bashrc
+      copy:
+        src: ./files/.bashrc
+        dest: ~{{ usr_name }}/
+        owner: "{{ usr_name }}"
+        group: smalldata
+        mode: '0640'
+
+- name: Act as new user
+  become: yes
+  become_user: "{{ usr_name }}"
+  become_method: sudo
+  tags: 
+    - settings
+  block:
+
+    - name: id check
+      shell: id; pwd; echo $HOME
+
+    - name: git clone
+      git:
+        repo: https://github.com/triptaminer/ansible.git
+        dest: ~{{ usr_name }}/git
+
+    - name: uploading some_command.sh script
+      copy:
+        src: ./files/some_command.sh
+        dest: ~{{ usr_name }}/
+        owner: "{{ usr_name }}"
+        group: smalldata
+        mode: '0755'
+
+
+    - name: generating access to service
+      expect:
+        command: /nfs/sd/{{ env_name }}/some_command.sh
+        responses:
+          "username: ": "{{ usr_name }}"
+          "host: ": "sec.url.xy"
+      register: login_link
+
+
+
+    - name: t1
+      set_fact:
+        login_link: "{{ login_link.stdout_lines }}"
+
+    - name: retrieving login link from service
+      shell: 'echo "{{ login_link }}" | grep "login link:" | sed -e "s/^.*login link: \(.*\)\\r.*$/\1/g"'
+      register: real_link
+
+    - name: t2
+      set_fact:
+        real_link: "{{ real_link.stdout }}"
+
+    - name: generating access to service
+      shell: "echo 'I got it, my new link is: {{ real_link }}'"
+
+
+- name: last config
+  tags: template
+  become: yes
+  become_user: "{{ usr_name }}"
+  become_method: sudo
+  template:
+    src: ./templates/config.ini
+    dest: ~{{ usr_name }}/config.ini
+    owner: "{{ usr_name }}"
+    group: smalldata
+    mode: '0700'
+
+
+
+
