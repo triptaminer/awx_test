@@ -68,10 +68,10 @@
     - name: id check
       shell: id; pwd; echo $HOME
 
-    - name: git clone
-      git:
-        repo: https://github.com/triptaminer/ansible.git
-        dest: ~{{ usr_name }}/git
+    # - name: git clone
+    #   git:
+    #     repo: https://github.com/triptaminer/ansible.git
+    #     dest: ~{{ usr_name }}/git
 
     - name: uploading some_command.sh script
       copy:

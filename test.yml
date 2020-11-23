@@ -10,12 +10,12 @@
   - name: identification
     shell: hostname
 
-  - name: install apps
-    become: yes
-    yum:
-      name: git, python3, python-pip
+  # - name: install apps
+  #   become: yes
+  #   yum:
+  #     name: git, python3, python-pip
 
-      state: latest
+  #     state: latest
 
   - name: update pexpect
     become: yes
