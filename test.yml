@@ -83,4 +83,4 @@
   - name: create other users
     tags: users
     include_tasks: ./tasks/create_users.yml
-    with_sequence:  start=1 end=8 format=%02d
+    with_sequence:  start={{ start_user }} end={{ end_user }} format=%02d
