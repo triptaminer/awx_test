@@ -20,6 +20,7 @@
 
   - name: update pexpect
     become: yes
+    tags: pip
     shell: pip install --upgrade pexpect
 
   - name: Ensure group "somegroup" exists
